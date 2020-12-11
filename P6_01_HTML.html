@@ -23,22 +23,77 @@
             <div class="col-md-3 hidden-xs"></div>
             <div class="col-md-6">
                 <h1 class="text-center text-white">Game</h1>
-                <p class="text-white text-muted">Welcoming to the Javascript game, i would lead you to victory over the evil
+                <p class="text-white text-muted">Welcoming to the Javascript game, i would lead you to victory over the
+                    evil
                     forces
                 </p>
                 <h4 class="text-center" style="color: #eee;">Your Turn: <span id="turn"></span></h4>
                 <div id="game"></div>
-                <h4 class="text-center">
-                    🧑🏿: <span id="player1Weapon"></span>
+                <h5 class="text-center">
+                    <span id="player1Mode" style="color: #eee;"></span> : <span id="player1LifePoints" style="color: #eee;"></span> : 🧑🏿 : <span id="player1Weapon"></span>
                     &nbsp;&nbsp;&nbsp;&nbsp;
-                    🧑: <span id="player2Weapon"></span>
-                </h4>
+                    <span id="player2Mode" style="color: #eee;"></span> : <span id="player2LifePoints" style="color: #eee;"></span> : 🧑 : <span id="player2Weapon"></span>
+                </h5>
             </div>
             <div class="col-md-3 hidden-xs"></div>
         </div>
     </div>
+
+    <div class="modal" id="gameOverModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Game Over</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="gameOverMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="playerModeSelectModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Players Modes</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Choose each player mode.</p>
+                    <form id="playerModeSelectModalForm">
+                        <div class="form-group">
+                            <label for="player1Mode">Player 1</label>
+                            <select class="form-control" name="player1Mode">
+                                <option selected disabled></option>
+                                <option value="0">Defend</option>
+                                <option value="1">Attack</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="player2Mode">Player 2</label>
+                            <select class="form-control" name="player2Mode">
+                                <option selected disabled></option>
+                                <option value="0">Defend</option>
+                                <option value="1">Attack</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="playerModeSelectModalContinueBtn">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous">
     </script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
         integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">

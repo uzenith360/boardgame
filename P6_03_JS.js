@@ -8,13 +8,19 @@ const nextPlayerTurn = () => {
     return 1;
   }
 
-  return playerInGameTurn += 1;
+  return playerInGameTurn + 1;
 };
 
+const gameOverModal = $('#gameOverModal');
+const gameOverMessageElement = $('#gameOverMessage');
 const turnElement = $('#turn');
 const gameElement = $('#game');
-const player1WeaponElement = $('#player1Weapon');
-const player2WeaponElement = $('#player2Weapon');
+const playerModeSelectModal = $('#playerModeSelectModal');
+const playerModeSelectModalForm = document.getElementById('playerModeSelectModalForm');
+
+const playersLifePointsElements = [$('#player1LifePoints'), $('#player2LifePoints')];
+const playersWeaponElements = [$('#player1Weapon'), $('#player2Weapon')];
+const playersModes = [$('#player1Mode'), $('#player2Mode')];
 
 // 1 to max inclusive
 const getRandomInt = (max) => {
@@ -283,14 +289,44 @@ class Player extends Things {
     }
 
     this.playerNum = playerNum;
+    this.lifePoints = 100;
+    this._isDefending;
+  }
+
+  setDefending() {
+    this._isDefending = true;
+  }
+
+  setAttacking() {
+    this._isDefending = false;
+  }
+
+  isDefending() {
+    return this._isDefending;
+  }
+
+  isAttacking() {
+    return !this._isDefending;
+  }
+
+  reduceLifePoints(byNumber) {
+    if (this._isDefending) {
+      this.lifePoints -= Math.floor(byNumber / 2);
+    } else {
+      this.lifePoints -= byNumber;
+    }
+
+    if (this.lifePoints < 0) {
+      this.lifePoints = 0;
+    }
+  }
+
+  getLifePoints() {
+    return this.lifePoints;
   }
 
   getPlayerNum() {
     return this.playerNum;
-  }
-
-  move() {
-
   }
 
   setPosition(position) {
@@ -314,8 +350,20 @@ class Player extends Things {
     return this.weapon;
   }
 
+  useWeapon() {
+    const weapon = this.weapon;
+
+    this.weapon = null;
+
+    return weapon;
+  }
+
+  hasWeapon() {
+    return !!this.weapon;
+  }
+
   _pickWeapon(weapon) {
-    if(this.weapon){
+    if (this.weapon) {
       this.weapon.setPosition(this.position);
       this.weapon.drop();
 
@@ -337,12 +385,12 @@ class Weapon extends Things {
     switch (type) {
       case 1:
         this.name = 'shakabula';
-        this.points = 20;
+        this.points = 30;
         this.visual = '💣';
         break;
       case 2:
         this.name = 'baginatu';
-        this.points = 30;
+        this.points = 20;
         this.visual = '🔫';
         break;
       default:
@@ -353,21 +401,23 @@ class Weapon extends Things {
     }
   }
 
+
   pick() {
     this.hidden = true;
   }
 
-  drop() { 
+  drop() {
     this.hidden = false;
   }
 }
 
 const gameState = (() => {
+  let isFightMode = false;
   const board = Board;
   const players = [];
   const weapons = [];
 
-  const ensureWeapons = () => weapons.some((weapon)=>weapon.isShown()) || makeWeapons();
+  const ensureThereAreWeapons = () => weapons.some((weapon) => weapon.isShown()) || makeWeapons();
 
   const findThing = (things, position) => things.find(
     (thing) => {
@@ -471,16 +521,108 @@ const gameState = (() => {
   };
 
   const onPickedWeapon = (player) => {
-    switch (player.getPlayerNum()) {
+    playersWeaponElements[player.getPlayerNum() - 1].text(player.getWeapon().getVisual());
+
+    ensureThereAreWeapons();
+  };
+
+  const checkAttack = (destPosition) => {
+    let currentPlayer;
+    let otherPlayer;
+    let otherPlayerPosition;
+
+    switch (playerInGameTurn) {
       case 1:
-        player1WeaponElement.text(player.getWeapon().getVisual());
+        currentPlayer = players[0];
+        otherPlayer = players[1];
+        otherPlayerPosition = players[1].getPosition();
         break;
       case 2:
-        player2WeaponElement.text(player.getWeapon().getVisual());
+        currentPlayer = players[1];
+        otherPlayer = players[0];
+        otherPlayerPosition = players[0].getPosition();
         break;
     }
 
-    ensureWeapons();
+    if (destPosition[0] === otherPlayerPosition[0] && destPosition[1] === otherPlayerPosition[1]) {
+      // check if you have a weapon, if so, attack the other player
+      if (currentPlayer.isAttacking() && currentPlayer.hasWeapon()) {
+        attack(currentPlayer, otherPlayer);
+
+        return true;
+      }
+    }
+  };
+
+  const attack = (playerAttacking, playerBeingAttacked) => {
+    const attackWeapon = playerAttacking.useWeapon();
+
+    playerBeingAttacked.reduceLifePoints(attackWeapon.points);
+
+    if (playerBeingAttacked.getLifePoints() === 0) {
+      //game over
+      //attacking player wins
+      gameOverMessageElement.text(`Game over: Player ${playerAttacking.getPlayerNum()} wins`);
+      gameOverModal.modal({
+        backdrop: 'static',
+        keyboard: false
+      });
+    }
+
+    //update player life points and other players' weapon as empty
+    playersLifePointsElements[playerBeingAttacked.getPlayerNum() - 1].text(playerBeingAttacked.getLifePoints());
+
+    playersWeaponElements[playerAttacking.getPlayerNum() - 1].text('');
+  };
+
+  const offFight = () => {
+    if (!isFightMode) {
+      return;
+    }
+
+    isFightMode = false;
+  };
+
+  const onFight = () => {
+    if (isFightMode) {
+      return;
+    }
+
+    isFightMode = true;
+
+    playerModeSelectModal.modal({
+      backdrop: 'static',
+      keyboard: false
+    });
+  };
+
+  const isPlayersCrossOver = (player1Position, player2Position) => player1Position[0] === player2Position[0] || player1Position[1] === player2Position[1];
+
+  const onTurn = (position) => {
+    const nextAction = () => {
+      gameState.renderUI();
+
+      playerInGameTurn = nextPlayerTurn();
+
+      turnElement.text(getPlayer(playerInGameTurn).getVisual());
+    };
+
+    if (isValidDestinationForPlayer(playerInGameTurn, position)) {
+      const playerInTurn = getPlayer(playerInGameTurn);
+      const nextPlayerInTurn = getPlayer(nextPlayerTurn());
+
+      playerInTurn.setPosition(position);
+
+      if (isPlayersCrossOver(playerInTurn.getPosition(), nextPlayerInTurn.getPosition())) {
+        onFight();
+      } else {
+        offFight();
+      }
+
+      nextAction();
+    } else if (checkAttack(position)) {
+      nextAction();
+    }
   };
 
   const isValidDestinationForPlayer = (playerNum, position) =>
@@ -510,15 +652,14 @@ const gameState = (() => {
     // );
   };
 
-
   return {
+    onTurn,
+    getPlayer,
     onPickedWeapon,
     getWeaponHere,
     isPlayerHere,
     isPlayerOrWeaponHere,
-    isValidDestinationForPlayer,
     initialize,
-    getPlayer,
     renderUI,
     updateUI
   }
@@ -527,18 +668,34 @@ const gameState = (() => {
 gameState.initialize();
 gameState.renderUI();
 
+$('#playerModeSelectModalContinueBtn').on('click', () => {
+  if (playerModeSelectModalForm.player1Mode.value && playerModeSelectModalForm.player2Mode.value) {
+    if (!!+playerModeSelectModalForm.player1Mode.value) {
+      gameState.getPlayer(1).setAttacking();
+      playersModes[0].text('Att');
+    } else {
+      gameState.getPlayer(1).setDefending();
+      playersModes[0].text('Def');
+    }
+
+    if (!!+playerModeSelectModalForm.player2Mode.value) {
+      gameState.getPlayer(2).setAttacking();
+      playersModes[1].text('Att');
+    } else {
+      gameState.getPlayer(2).setDefending();
+      playersModes[1].text('Def');
+    }
+
+    playerModeSelectModal.modal('hide');
+  }
+});
+
 $("#game").on("click", "td[data-row][data-col]", (event) => {
   const $this = $(event.target);
   const position = [+$this.attr('data-row'), +$this.attr('data-col')];
 
-  if (gameState.isValidDestinationForPlayer(playerInGameTurn, position)) {
-    gameState.getPlayer(playerInGameTurn).setPosition(position);
-    gameState.renderUI();
-
-    playerInGameTurn = nextPlayerTurn();
-
-    turnElement.text(gameState.getPlayer(playerInGameTurn).getVisual());
-  }
+  gameState.onTurn(position);
 });
 
 turnElement.text(gameState.getPlayer(playerInGameTurn).getVisual());
+playersLifePointsElements.forEach((element, index) => element.text(gameState.getPlayer(index + 1).getLifePoints()));
