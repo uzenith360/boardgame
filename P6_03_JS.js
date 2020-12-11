@@ -562,7 +562,7 @@ const gameState = (() => {
     if (playerBeingAttacked.getLifePoints() === 0) {
       //game over
       //attacking player wins
-      gameOverMessageElement.text(`Game over: Player ${playerAttacking.getPlayerNum()} wins`);
+      gameOverMessageElement.text(`Player ${playerAttacking.getPlayerNum()} wins`);
       gameOverModal.modal({
         backdrop: 'static',
         keyboard: false
